@@ -1,13 +1,13 @@
 # Introduction
-This is a Python project template with a configuration script that saves the data paths to `config.ini`. Publishing to PyPI (so you only have to install this via `python3 -m pip install project`) is a few extra steps and [this article](https://realpython.com/pypi-publish-python-package/) goes into the details.
+This is a Python project template with a configuration script that saves the data paths to `config.ini`. Publishing to PyPI (so you only have to install this via `python3 -m pip install elfin_conjunctions`) is a few extra steps and [this article](https://realpython.com/pypi-publish-python-package/) goes into the details.
 
 I found this package format very useful for my data analysis projects so hopefully you will too. Feel free to copy/paste these files into your own repository and rename/delete all of the dummy names and modules.  
 
 # Installation
 - To install as a developer run:
   ```bash
-    git clone git@github.com:mshumko/elfin_asi_conjunctions.git
-    cd elfin_asi_conjunctions
+    git clone git@github.com:mshumko/elfin_conjunctions.git
+    cd elfin_conjunctions
 
     # Then one of these (see comment in requirement.txt):
     python3 -m pip install -e .

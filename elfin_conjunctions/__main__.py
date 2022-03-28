@@ -5,7 +5,7 @@ import configparser
 import elfin_conjunctions
 
 # Run the configuration script with
-# python3 -m elfin_asi_conjunctions [init, initialize, config, or configure]
+# python3 -m elfin_conjunctions [init, initialize, config, or configure]
 
 here = pathlib.Path(__file__).parent.resolve()
 
@@ -37,5 +37,5 @@ else:
     print(
         'This is a configuration script to set up config.ini file. The config '
         'file contains the ELFIN data directory and the directory of the source '
-        'code. To configure this package, run python3 -m elfin_asi_conjunctions config.'
+        'code. To configure this package, run python3 -m elfin_conjunctions config.'
     )
