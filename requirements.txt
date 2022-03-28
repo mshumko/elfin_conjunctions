@@ -1,0 +1,11 @@
+# Requirements.txt to replicate the exact package environment (not suitable for 
+# users who install this as a component of their work---this will probably
+# cause dependency hell (Google it)).
+numpy >= 1.18.5
+matplotlib >= 3.3.2
+pandas >= 1.0.0
+cdflib >= 0.3.20
+cartopy
+aurora-asi-lib
+
+-e . # Install this project
