@@ -2,10 +2,6 @@ import warnings
 import pathlib
 import configparser
 
-# Can add relative imports for your modules here. For example:
-from elfin_conjunctions.library import hello
-# will be avaliable to users as project.hello()
-
 __version__ = '0.0.1'
 
 # Load the configuration settings.
@@ -21,5 +17,7 @@ if 'Paths' in settings:
     except KeyError as err:
         warnings.warn('The project package did not find the config.ini file. '
             'Did you run "python3 -m package config"?')
+        project_dir = None
+        elfin_data_dir = None
 
     config = {'project_dir': project_dir, 'elfin_data_dir': elfin_data_dir}

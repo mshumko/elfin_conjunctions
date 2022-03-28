@@ -2,7 +2,7 @@ import pathlib
 
 import pandas as pd
 
-import elfin_conjunctions.config as config
+from elfin_conjunctions import config
 
 def load_locations(array=None, location_code=None):
     """
@@ -15,6 +15,18 @@ def load_locations(array=None, location_code=None):
     location_code: str
         Optionally filter by the ASI location_code.
     """
+    path = pathlib.Path(config['project_dir']) / 'data' / 'asi_locations.csv'
+    locations = pd.read_csv(path)
+    if array is not None:
+        locations = locations[locations['array'] == array.upper()]
+    if location_code is not None:
+        locations = locations[locations['location_code'] == location_code.upper()]
+    return locations
 
-    return
-
+if __name__ == '__main__':
+    all_asi = load_locations()
+    print('ALL:\n', all_asi)
+    themis_asi = load_locations(array='themis')
+    print('THEMIS:\n', themis_asi)
+    rego_asi = load_locations(array='rego')
+    print('REGO:\n', rego_asi)
