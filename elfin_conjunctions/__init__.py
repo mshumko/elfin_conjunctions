@@ -17,9 +17,9 @@ settings.read(here / 'config.ini')
 if 'Paths' in settings:  
     try:
         project_dir = settings['Paths']['project_dir']
-        project_data_dir = settings['Paths']['project_data_dir']
+        elfin_data_dir = settings['Paths']['elfin_data_dir']
     except KeyError as err:
         warnings.warn('The project package did not find the config.ini file. '
             'Did you run "python3 -m package config"?')
 
-    config = {'project_dir': project_dir, 'project_data_dir': project_data_dir}
+    config = {'project_dir': project_dir, 'elfin_data_dir': elfin_data_dir}
