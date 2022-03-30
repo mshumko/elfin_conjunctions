@@ -5,8 +5,10 @@ from datetime import datetime, date
 import dateutil.parser
 
 import cdflib
+import numpy as np
 
 from elfin_conjunctions import config
+
 
 def state(sc_id, day):
     """
@@ -35,6 +37,7 @@ def state(sc_id, day):
     print(state.cdf_info())
     print(state.cdf_info()['zVariables'])
     print(state.varget('ela_att_gei').shape)
+    print(state.varget('ela_att_gei'))
     """
     if isinstance(day, str):
         day = dateutil.parser.parse(day)
@@ -46,7 +49,9 @@ def state(sc_id, day):
         f"(and subdirectories) that match : {file_pattern}")
     # Load file
     state_obj = cdflib.CDF(file_paths[0])
-    epoch =cdflib.cdfepoch.to_datetime(state_obj.varget(f'el{sc_id.lower()}_state_time'))
+    epoch = np.array(
+        cdflib.cdfepoch.to_datetime(state_obj.varget(f'el{sc_id.lower()}_state_time'))
+        )
     return epoch, state_obj
 
 def epd(sc_id, day):
@@ -59,3 +64,4 @@ if __name__ == '__main__':
     print(state.cdf_info())
     print(state.cdf_info()['zVariables'])
     print(state.varget('ela_att_gei').shape)
+    print(state.varget('ela_att_gei'))
