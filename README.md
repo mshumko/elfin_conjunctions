@@ -18,9 +18,10 @@ I found this package format very useful for my data analysis projects so hopeful
     ```
 
 # Configuration
-A lot of data science projects load data external to the source code (a good practice) so `project/__main__.py` creates a `project/config.ini` file that is loaded on import by `project/__init__.py`. 
+After you install the project using the above commands, run `python3 -m elfin_asi_conjunctions config` to add the path to the ELFIN data. It will be saved to `elfin_asi_conjunctions/config.ini`. 
 
-To execute `project/__main__.py`, first install `project` with the steps above and then run `python3 -m project config` and answer the prompt. You will now see a `project/config.ini` with two paths: one to this project and the other to the specified data directory. One loaded by `project/__init__.py`, this dictionary is accessed via `import project.config`.
+# Dependencies
+You'll need to install [IRBEM](https://github.com/PRBEM/IRBEM) to use the `Conjunction` class in `conjunction.py`. You'll need to compile the fortran code and then install the Python wrapper.
 
 # Structure
 This folder (`project_template`):
