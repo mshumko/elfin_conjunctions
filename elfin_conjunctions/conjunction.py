@@ -20,7 +20,7 @@ class Conjunction:
         # all stands for (altitude, latitude, longitude), the variable order for IRBEM.
         transform = IRBEM.Coords()
         _all = transform.coords_transform(time, pos_gei, 'GEI', 'GDZ')
-        self.lla = np.array([_all[:, 1], _all[:, 2], _all[:, 0]]).T
+        self.lla = self._swap_all2lla(_all)
 
         assert self.time.shape[0] == self.lla.shape[0], 'The time and pos_gei shapes do not match.'
         return
@@ -41,14 +41,25 @@ class Conjunction:
             +2   = opposite magnetic hemisphere as starting point
         """
         m = IRBEM.MagFields(kext='OPQ77')
-        self.footprint = np.zeros_like(self.lla)
+        _all = np.zeros_like(self.lla)
 
         for i, (time_i, lla_i) in enumerate(zip(self.time, self.lla)):
             X = {'Time':time_i, 'x1':lla_i[2], 'x2':lla_i[0], 'x3':lla_i[1]}
-            self.footprint[i, :] = m.find_foot_point(X, {}, alt, hemi_flag)['XFOOT']
-            pass
-        self.footprint[self.footprint == -1E31] = np.nan
+            _all[i, :] = m.find_foot_point(X, {}, alt, hemi_flag)['XFOOT']
+        _all[_all == -1E31] = np.nan
+        self.lla = self._swap_all2lla(_all)
         return
+
+    def _swap_all2lla(self, _all):
+        """
+        Swap from IRBEM's (alt, lat, lon) to (lat, lon, alt) coordinates.
+        """
+        return np.array([_all[:, 1], _all[:, 2], _all[:, 0]]).T
+
+
+class Conjunctions:
+    def __init__(self) -> None:
+        
 
 if __name__ == '__main__':
     R_e = 6378.137  # km
