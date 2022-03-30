@@ -10,7 +10,7 @@ import numpy as np
 from elfin_conjunctions import config
 
 
-def state(sc_id, day):
+def load_state(sc_id, day):
     """
     Loads the ELFIN state (ephemeris) data.
 
@@ -33,7 +33,7 @@ def state(sc_id, day):
     -------
     sc_id = 'A'
     day = '2020-01-01'
-    state_times, state = state(sc_id, day)
+    state_times, state = load_state(sc_id, day)
     print(state.cdf_info())
     print(state.cdf_info()['zVariables'])
     print(state.varget('ela_att_gei').shape)
@@ -60,7 +60,7 @@ def epd(sc_id, day):
 if __name__ == '__main__':
     sc_id = 'A'
     day = '2020-01-01'
-    state_times, state = state(sc_id, day)
+    state_times, state = load_state(sc_id, day)
     print(state.cdf_info())
     print(state.cdf_info()['zVariables'])
     print(state.varget('ela_att_gei').shape)
