@@ -54,7 +54,7 @@ def load_state(sc_id, day):
         )
     return epoch, state_obj
 
-def epd(sc_id, day):
+def load_epd(sc_id, day):
     """
     Load an EPD file.
     """
