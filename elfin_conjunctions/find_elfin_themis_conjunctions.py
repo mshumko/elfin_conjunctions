@@ -18,7 +18,12 @@ save_dir = pathlib.Path(config['project_dir'], 'data', 'conjunctions')
 if not save_dir.exists():
     save_dir.mkdir(parents=True)
     print(f'Made {save_dir} directory.')
-
+else:
+    # Remove the current conjunction folder to avoid duplicate rows.
+    for file in save_dir.glob('*.csv'):
+        if file.is_file():
+            file.unlink()
+        
 for sc_id in ['a', 'b']:
     days = pd.date_range(start='2018-01-01', end=datetime.now(), freq='D')
     for day in days:
