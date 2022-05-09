@@ -1,13 +1,15 @@
 import numpy as np
-import asilib
-
 import IRBEM
 
 from elfin_conjunctions.load import elfin
-class Conjunction:
-    def __init__(self, time, pos_gei):
+
+
+R_e = 6378.137  # km
+
+class Elfin_footprint:
+    def __init__(self, sc_id, day):
         """"
-        Calculate conjunctions between a satellite with its position in the GEI coordinates.
+        Load ELFIN's ephemeris and calculate its footprint.
 
         Parameters
         ----------
@@ -16,10 +18,12 @@ class Conjunction:
         pos_gei: np.array
             The satellite positions in GEI coordinates with shape (nTime, 3)
         """
-        self.time = np.array(time)
+        self.time, self.state = elfin.load_state(sc_id, day)
+        self.pos_gei = self.state.varget(f'el{sc_id.lower()}_pos_gei')/R_e
+
         # all stands for (altitude, latitude, longitude), the variable order for IRBEM.
         transform = IRBEM.Coords()
-        _all = transform.coords_transform(time, pos_gei, 'GEI', 'GDZ')
+        _all = transform.coords_transform(self.time, self.pos_gei, 'GEI', 'GDZ')
         self.lla = self._swap_all2lla(_all)
 
         assert self.time.shape[0] == self.lla.shape[0], 'The time and pos_gei shapes do not match.'
@@ -55,17 +59,3 @@ class Conjunction:
         Swap from IRBEM's (alt, lat, lon) to (lat, lon, alt) coordinates.
         """
         return np.array([_all[:, 1], _all[:, 2], _all[:, 0]]).T
-
-
-class Conjunctions:
-    def __init__(self) -> None:
-        
-
-if __name__ == '__main__':
-    R_e = 6378.137  # km
-    sc_id = 'A'
-    day = '2020-01-01'
-    times, state = elfin.load_state(sc_id, day)
-    pos_gei_re = state.varget(f'el{sc_id.lower()}_pos_gei')/R_e
-    c = Conjunction(times, pos_gei_re)
-    c.map_footprint()
