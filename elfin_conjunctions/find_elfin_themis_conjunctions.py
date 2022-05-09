@@ -13,16 +13,17 @@ from elfin_conjunctions import config
 themis_imagers = asilib.themis_info()
 themis_url = 'https://data.phys.ucalgary.ca/sort_by_project/THEMIS/asi/stream0/'
 
-
+# Prepare the data/conjunction directory.
 save_dir = pathlib.Path(config['project_dir'], 'data', 'conjunctions')
 if not save_dir.exists():
     save_dir.mkdir(parents=True)
     print(f'Made {save_dir} directory.')
 else:
-    # Remove the current conjunction folder to avoid duplicate rows.
+    # Remove the csv files in the conjunction folder to avoid duplicate rows.
     for file in save_dir.glob('*.csv'):
         if file.is_file():
             file.unlink()
+    print('Cleaned up the conjunction folder.')
         
 for sc_id in ['a', 'b']:
     days = pd.date_range(start='2018-01-01', end=datetime.now(), freq='D')
@@ -34,25 +35,29 @@ for sc_id in ['a', 'b']:
             if 'EPD files found at' in str(err):
                 continue
             if 'No records found for variable' in str(err):
-                print(f'No data on day {day.date()}')
                 continue
             else:
                 raise
-
+        
+        print(f'Processing ELFIN-{sc_id.upper()} data on {day.date()}')
         # Calculate the ELFIN footprints in the LLA coordinates.
         footprint = Elfin_footprint(sc_id, day)
         footprint.map_footprint()
 
         # What ASI was below ELFIN?
         for location_code in themis_imagers['location_code']:
-            imager = asilib.themis(location_code, time=day, load_images=False)
+            try:
+                imager = asilib.themis(location_code, time=day, load_images=False)
+            except Exception as err:
+                if 'Invalid SIGNATURE' in str(err):  # Poorly formatted save file.
+                    continue
             c2 = asilib.Conjunction(imager, footprint.time, footprint.lla)
             conjunction_df = c2.find()
             conjunction_df['epd_data'] = False
             conjunction_df['asi_data'] = False
 
             for index, row in conjunction_df.iterrows():
-                # Was there EPD data at this time?
+                # Was there EPD data during this conjunction?
                 idx = np.where(
                     (epd_time > row['start']) &
                     (epd_time < row['end'])
@@ -60,7 +65,7 @@ for sc_id in ['a', 'b']:
                 if len(idx):
                     conjunction_df.loc[index, 'epd_data'] = True
 
-                # Was there ASI data at this time?
+                # Was there ASI data during this conjunction?
                 download = asilib.io.download.Downloader(themis_url)
                 url_subdirectories = [
                     str(day.year), 
@@ -75,7 +80,8 @@ for sc_id in ['a', 'b']:
                 except FileNotFoundError as err:
                     if 'does not contain any hyper references containing' in str(err):
                         continue
-                conjunction_df.loc[index, 'asi_data'] = True
+                if len(asi_url):
+                    conjunction_df.loc[index, 'asi_data'] = True
                 
                 # Save to file.
                 save_name = f'elfin_{sc_id.lower()}_themis_{location_code.lower()}_conjunctions.csv'
