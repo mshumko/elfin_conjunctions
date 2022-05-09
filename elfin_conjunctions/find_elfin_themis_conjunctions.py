@@ -14,7 +14,7 @@ themis_imagers = asilib.themis_info()
 themis_url = 'https://data.phys.ucalgary.ca/sort_by_project/THEMIS/asi/stream0/'
 
 
-save_dir = pathlib.Path(config['project_dir'] / 'data' / 'conjunctions')
+save_dir = pathlib.Path(config['project_dir'], 'data', 'conjunctions')
 if not save_dir.exists():
     save_dir.mkdir(parents=True)
     print(f'Made {save_dir} directory.')
@@ -74,4 +74,9 @@ for sc_id in ['a', 'b']:
                 
                 # Save to file.
                 save_name = f'elfin_{sc_id.lower()}_themis_{location_code.lower()}_conjunctions.csv'
-                
+                save_path = save_dir / save_name
+
+                if save_path.exists():
+                    conjunction_df.to_csv(save_path, mode='a', header=False, index=False)
+                else:
+                    conjunction_df.to_csv(save_path, index=False)
