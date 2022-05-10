@@ -91,3 +91,15 @@ for sc_id in ['a', 'b']:
                     conjunction_df.to_csv(save_path, mode='a', header=False, index=False)
                 else:
                     conjunction_df.to_csv(save_path, index=False)
+
+
+    # Merge the individual files from each THEMIS ASI into one file for ELFIN-A and one file
+    # for ELFIN-B
+    file_paths = save_dir.rglob(f'elfin_{sc_id.lower()}_themis_*_conjunctions.csv')
+    merged_conjunctions = pd.DataFrame(columns=['start', 'end', 'epd_data', 'asi_data', 'asi'])
+
+    for file_path in file_paths:
+        df = pd.read_csv(file_path)
+        df['asi'] = file_path.name.split('_')[3]
+
+        merged_conjunctions = pd.concat([merged_conjunctions, df])
