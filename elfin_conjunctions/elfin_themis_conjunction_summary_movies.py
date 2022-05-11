@@ -100,3 +100,5 @@ for _, row in conjunction_list.iterrows():
             f'{alt} km footprint'
             )
         plt.tight_layout()
+
+    plt.close()
