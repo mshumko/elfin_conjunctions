@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from elfin_conjunctions import config, elfin_footprint
 from elfin_conjunctions.load import elfin
 
-sc_id = 'a'
+sc_id = 'b'
 alt = 110  # km
 box = (10, 10)  # km
 
@@ -30,6 +30,7 @@ for _, row in conjunction_list.iterrows():
         # Load the ELFIN data for this day.
         epd_time, epd = elfin.load_epd(sc_id, row['start'])
         current_date = row['start'].date
+    print(f'Processing {row["start"]}')
 
     time_range = [
         row['start'] - timedelta(minutes=1),
@@ -65,7 +66,7 @@ for _, row in conjunction_list.iterrows():
     )[0]
     assert len(epd_idx), f'No EPD data found in {time_range=}'
     epd_time_flt = epd_time[epd_idx]
-    epd_counts = epd.varget('ela_pef')[epd_idx, :]
+    epd_counts = epd.varget(f'el{sc_id.lower()}_pef')[epd_idx, :]
 
     img_gen = img.animate_fisheye_gen(ax=ax[0], overwrite=True)
     mask_gen = c.equal_area_gen(box=box)
