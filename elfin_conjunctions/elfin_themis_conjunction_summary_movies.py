@@ -6,36 +6,51 @@ from datetime import datetime, date, timedelta
 
 import pandas as pd
 import numpy as np
-import asilib  # Need to install from the Imager branch on GitHub
+import asilib
 import matplotlib.pyplot as plt
 
 from elfin_conjunctions import config, elfin_footprint
-from elfin_conjunctions.load import elfin
+import pad 
 
-sc_id = 'b'
 alt = 110  # km
 box = (10, 10)  # km
+# options: 'THEMIS-ASI', 'TREx RGB', 'TREx NIR', 'REGO'
+asis = ['THEMIS-ASI']
 
-conjunction_dir = pathlib.Path(config['project_dir'], 'data', 'conjunctions')
-conjunction_path = conjunction_dir.parents[0] / f'elfin_{sc_id.lower()}_themis_asi_conjunctions_filtered.csv'
+conjunction_dir = pathlib.Path(config['project_dir'], 'data')
+conjunction_path = conjunction_dir / '2019_2023_elfin_themis_rego_trex_conjunctions.csv'
 
 conjunction_list = pd.read_csv(conjunction_path)
-conjunction_list['start'] = pd.to_datetime(conjunction_list['start'])
-conjunction_list['end'] = pd.to_datetime(conjunction_list['end'])
+conjunction_list['Start Time (UTC)'] = pd.to_datetime(conjunction_list['Start Time (UTC)'])
+conjunction_list['End Time (UTC)'] = pd.to_datetime(conjunction_list['End Time (UTC)'])
 
-current_date = date.min
+conjunction_list['asi_array'] = [row.split()[0] for row in conjunction_list['Conjunction Between'].to_numpy()]
 
 for _, row in conjunction_list.iterrows():
-    if current_date != row['start'].date:
-        # Load the ELFIN data for this day.
-        epd_time, epd = elfin.load_epd(sc_id, row['start'])
-        current_date = row['start'].date
+    time_range = (
+        row['Start Time (UTC)']-timedelta(minutes=3), 
+        row['End Time (UTC)']+timedelta(minutes=3)
+        )
+    sc_id = row['Conjunction Between'].split('and')[-1][-1]
+    pad_obj = pad.EPD_PAD(sc_id, time_range, start_pa=90)
+    
+    # fig, ax = plt.subplots(7, 1, sharex=True, figsize=(7, 9))
+    # ax[0].set_title(
+    #     f'ELFIN-{sc_id.upper()} | {time_range[0]}-{time_range[1]}'
+    #     f'\nElectron Pitch Angle Distributions'
+    #     )
+    # pad_obj.plot_omni(ax[0])
+    # pad_obj.plot_pad_scatter(ax[1])
+    # pad_obj.plot_pad_spectrogram(ax[2])
+    # pad_obj.plot_pad_spectrogram(ax[3], energy=520)
+    # pad_obj.plot_pad_spectrogram(ax[4], energy=1081)
+    # pad_obj.plot_pad_spectrogram(ax[5], energy=2121)
+    # pad_obj.plot_blc_dlc_ratio(ax[-1])
+    # pad_obj.plot_position(ax[-1])
+    # plt.subplots_adjust(bottom=0.127, right=0.927, top=0.948, hspace=0.133)
+    # plt.show()
     print(f'Processing {row["start"]}')
 
-    time_range = [
-        row['start'] - timedelta(minutes=1),
-        row['end'] + timedelta(minutes=1)
-    ]
     # Create an Imager object
     img = asilib.themis(row['asi'], time_range=time_range, alt=alt)
     # Load, filter, and map the ELFIN footprint
