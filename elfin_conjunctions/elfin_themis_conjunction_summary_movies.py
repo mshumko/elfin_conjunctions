@@ -70,7 +70,8 @@ for row_i, (_, row) in enumerate(conjunction_list.iterrows()):
         img = asilib.asi.rego(row['asi'], time_range=time_range, alt=alt)
     else:
         raise NotImplementedError
-    # Load, filter, and map the ELFIN footprint
+    
+    # TODO: Use the pad alternative.
     footprint = elfin_footprint.Elfin_footprint(sc_id, row['Start Time (UTC)'])
     footprint_idx = np.where(
         (footprint.time >= time_range[0]) &
