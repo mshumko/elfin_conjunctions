@@ -6,8 +6,9 @@ from datetime import datetime, date, timedelta
 
 import pandas as pd
 import numpy as np
-import asilib
 import matplotlib.pyplot as plt
+import asilib
+import asilib.asi
 
 from elfin_conjunctions import config, elfin_footprint
 import pad 
@@ -32,36 +33,45 @@ for i, row in enumerate(conjunction_list['asi_array'].to_numpy()):
         if _asi in row:
             idx.append(i)
 conjunction_list = conjunction_list.iloc[idx, :]
-
-for _, row in conjunction_list.iterrows():
-    print(f'Processing {row["start"]}')
+n = conjunction_list.shape[0]
+for row_i, (_, row) in enumerate(conjunction_list.iterrows()):
+    print(f'\rProcessing {row["Start Time (UTC)"]} ({row_i}/{n}).')
     time_range = (
-        row['Start Time (UTC)']-timedelta(minutes=3), 
-        row['End Time (UTC)']+timedelta(minutes=3)
+        row['Start Time (UTC)']-timedelta(minutes=1), 
+        row['End Time (UTC)']+timedelta(minutes=1)
         )
     sc_id = row['Conjunction Between'].split('and')[-1][-1]
-    pad_obj = pad.EPD_PAD(sc_id, time_range, start_pa=90)
+    try:
+        pad_obj = pad.EPD_PAD(sc_id, time_range, start_pa=90)
+    except (FileNotFoundError, ValueError) as err:
+        if f'No ELFIN-{sc_id} L2 data between' in str(err): 
+            continue
+        elif f'No level 2 ELFIN-{sc_id} electron EPD files found' in str(err):
+            continue
+        else:
+            raise
     
-    # fig, ax = plt.subplots(7, 1, sharex=True, figsize=(7, 9))
-    # ax[0].set_title(
-    #     f'ELFIN-{sc_id.upper()} | {time_range[0]}-{time_range[1]}'
-    #     f'\nElectron Pitch Angle Distributions'
-    #     )
-    # pad_obj.plot_omni(ax[0])
-    # pad_obj.plot_pad_scatter(ax[1])
-    # pad_obj.plot_pad_spectrogram(ax[2])
-    # pad_obj.plot_pad_spectrogram(ax[3], energy=520)
-    # pad_obj.plot_pad_spectrogram(ax[4], energy=1081)
-    # pad_obj.plot_pad_spectrogram(ax[5], energy=2121)
-    # pad_obj.plot_blc_dlc_ratio(ax[-1])
-    # pad_obj.plot_position(ax[-1])
-    # plt.subplots_adjust(bottom=0.127, right=0.927, top=0.948, hspace=0.133)
-    # plt.show()
+    fig, ax = plt.subplots(4, gridspec_kw={'height_ratios':[3, 1, 1, 1]}, figsize=(6, 10))
+    ax[0].set_title(
+        f'ELFIN-{sc_id.upper()} {row["asi_array_and_id"]} Conjunction\n'
+        f'{time_range[0]}-{time_range[1]}'
+        )
+    pad_obj.plot_omni(ax[2])
+    pad_obj.plot_blc_dlc_ratio(ax[3])
+    pad_obj.plot_position(ax[3])
+    plt.subplots_adjust(bottom=0.127, right=0.927, top=0.948, hspace=0.133)
+    plt.show()
 
-    # Create an Imager object
-    img = asilib.themis(row['asi'], time_range=time_range, alt=alt)
+    if row['asi_array'] == 'TREx RGB':
+        img = asilib.asi.trex_rgb(row['asi'], time_range=time_range, alt=alt)
+    elif row['asi_array'] == 'THEMIS-ASI':
+        img = asilib.asi.themis(row['asi'], time_range=time_range, alt=alt)
+    elif row['asi_array'] == 'REGO':
+        img = asilib.asi.rego(row['asi'], time_range=time_range, alt=alt)
+    else:
+        raise NotImplementedError
     # Load, filter, and map the ELFIN footprint
-    footprint = elfin_footprint.Elfin_footprint(sc_id, row['start'])
+    footprint = elfin_footprint.Elfin_footprint(sc_id, row['Start Time (UTC)'])
     footprint_idx = np.where(
         (footprint.time >= time_range[0]) &
         (footprint.time <= time_range[1])
