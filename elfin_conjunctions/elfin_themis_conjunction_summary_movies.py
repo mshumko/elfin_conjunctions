@@ -14,19 +14,27 @@ import pad
 
 alt = 110  # km
 box = (10, 10)  # km
-# options: 'THEMIS-ASI', 'TREx RGB', 'TREx NIR', 'REGO'
-asis = ['THEMIS-ASI']
+asis = ['TREx RGB']  # other options: 'THEMIS-ASI', 'TREx RGB', 'TREx NIR', 'REGO'
 
 conjunction_dir = pathlib.Path(config['project_dir'], 'data')
 conjunction_path = conjunction_dir / '2019_2023_elfin_themis_rego_trex_conjunctions.csv'
 
+# Load the conjunction list and identify the ASI array and ASI location_code.
 conjunction_list = pd.read_csv(conjunction_path)
 conjunction_list['Start Time (UTC)'] = pd.to_datetime(conjunction_list['Start Time (UTC)'])
 conjunction_list['End Time (UTC)'] = pd.to_datetime(conjunction_list['End Time (UTC)'])
-
-conjunction_list['asi_array'] = [row.split()[0] for row in conjunction_list['Conjunction Between'].to_numpy()]
+conjunction_list['asi_array_and_id'] = [row.split('and')[0] for row in conjunction_list['Conjunction Between'].to_numpy()]
+conjunction_list['asi_array'] = [' '.join(row.split()[:-1]) for row in conjunction_list['asi_array_and_id'].to_numpy()]
+conjunction_list['asi'] = [row.split()[-1] for row in conjunction_list['asi_array_and_id'].to_numpy()]
+idx = []
+for i, row in enumerate(conjunction_list['asi_array'].to_numpy()):
+    for _asi in asis:
+        if _asi in row:
+            idx.append(i)
+conjunction_list = conjunction_list.iloc[idx, :]
 
 for _, row in conjunction_list.iterrows():
+    print(f'Processing {row["start"]}')
     time_range = (
         row['Start Time (UTC)']-timedelta(minutes=3), 
         row['End Time (UTC)']+timedelta(minutes=3)
@@ -49,7 +57,6 @@ for _, row in conjunction_list.iterrows():
     # pad_obj.plot_position(ax[-1])
     # plt.subplots_adjust(bottom=0.127, right=0.927, top=0.948, hspace=0.133)
     # plt.show()
-    print(f'Processing {row["start"]}')
 
     # Create an Imager object
     img = asilib.themis(row['asi'], time_range=time_range, alt=alt)
