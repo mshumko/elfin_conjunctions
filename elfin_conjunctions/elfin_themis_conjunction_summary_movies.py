@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import asilib
 import asilib.asi
 
-from elfin_conjunctions import config, elfin_footprint
+from elfin_conjunctions import config
 import pad 
 
 alt = 110  # km
@@ -33,6 +33,7 @@ for i, row in enumerate(conjunction_list['asi_array'].to_numpy()):
         if _asi in row:
             idx.append(i)
 conjunction_list = conjunction_list.iloc[idx, :]
+
 n = conjunction_list.shape[0]
 for row_i, (_, row) in enumerate(conjunction_list.iterrows()):
     print(f'\rProcessing {row["Start Time (UTC)"]} ({row_i}/{n}).')
@@ -42,7 +43,7 @@ for row_i, (_, row) in enumerate(conjunction_list.iterrows()):
         )
     sc_id = row['Conjunction Between'].split('and')[-1][-1]
     try:
-        pad_obj = pad.EPD_PAD(sc_id, time_range, start_pa=90)
+        pad_obj = pad.EPD_PAD(sc_id, time_range, start_pa=90, lc_exclusion_angle=0)
     except (FileNotFoundError, ValueError) as err:
         if f'No ELFIN-{sc_id} L2 data between' in str(err): 
             continue
@@ -56,83 +57,47 @@ for row_i, (_, row) in enumerate(conjunction_list.iterrows()):
         f'ELFIN-{sc_id.upper()} {row["asi_array_and_id"]} Conjunction\n'
         f'{time_range[0]}-{time_range[1]}'
         )
-    pad_obj.plot_omni(ax[2])
-    pad_obj.plot_blc_dlc_ratio(ax[3])
+    pad_obj.plot_omni(ax[2], colorbar=False)
+    pad_obj.plot_blc_dlc_ratio(ax[3], colorbar=False)
     pad_obj.plot_position(ax[3])
-    plt.subplots_adjust(bottom=0.127, right=0.927, top=0.948, hspace=0.133)
-    plt.show()
+    # plt.subplots_adjust(bottom=0.127, right=0.927, top=0.948, hspace=0.133)
+    # plt.show()
 
     if row['asi_array'] == 'TREx RGB':
-        img = asilib.asi.trex_rgb(row['asi'], time_range=time_range, alt=alt)
+        asi = asilib.asi.trex_rgb(row['asi'], time_range=time_range, alt=alt)
     elif row['asi_array'] == 'THEMIS-ASI':
-        img = asilib.asi.themis(row['asi'], time_range=time_range, alt=alt)
+        asi = asilib.asi.themis(row['asi'], time_range=time_range, alt=alt)
     elif row['asi_array'] == 'REGO':
-        img = asilib.asi.rego(row['asi'], time_range=time_range, alt=alt)
+        asi = asilib.asi.rego(row['asi'], time_range=time_range, alt=alt)
     else:
         raise NotImplementedError
+
+    conjunction_obj = asilib.Conjunction(asi, pad_obj.transformed_state.drop(columns='mlat'))
+    conjunction_obj.interp_sat()
+    conjunction_obj.lla_footprint(alt)
+    sat_azel, sat_azel_pixels = conjunction_obj.map_azel()
+    nearest_pixel_intensity = conjunction_obj.intensity(box=None)
     
-    # TODO: Use the pad alternative.
-    footprint = elfin_footprint.Elfin_footprint(sc_id, row['Start Time (UTC)'])
-    footprint_idx = np.where(
-        (footprint.time >= time_range[0]) &
-        (footprint.time <= time_range[1])
-    )[0]
-    footprint.time = footprint.time[footprint_idx]
-    footprint.lla = footprint.lla[footprint_idx, :]
-    footprint.map_footprint(alt=alt)
+    # fig, ax = plt.subplots(3, gridspec_kw={'height_ratios':[3, 1, 1]}, figsize=(6, 10))
+    gen = asi.animate_fisheye_gen(
+        ax=ax[0], azel_contours=True, overwrite=True, cardinal_directions='news'
+    )
+    ax[1].plot(conjunction_obj.sat.index, nearest_pixel_intensity, color='k')
 
-    c = asilib.Conjunction(img, footprint.time, footprint.lla)
-    c.resample()
-    sat_azel, asi_pixels = c.map_lla_azel()
-    equal_area_gen = c.equal_area_gen(box=box)
-    mask_gen = c.equal_area_gen(box=(10, 10))
+    for i, (image_time, image, _, im) in enumerate(gen):
+        ax[0].xaxis.set_visible([])
+        ax[0].plot(sat_azel_pixels[:, 0], sat_azel_pixels[:, 1], 'r:')
+        ax[0].scatter(sat_azel_pixels[i, 0], sat_azel_pixels[i, 1], s=10, c='r')
 
-    mean_asi_intensity = -np.ones(c.sat.shape[0])
-    for i, ((_, image), mask) in enumerate(zip(img, equal_area_gen)):
-        mean_asi_intensity[i] = np.nanmean(image*mask)
-    
-    fig, ax = plt.subplots(3, gridspec_kw={'height_ratios':[3, 1, 1]}, figsize=(6, 10))
-    ax[1].sharex(ax[2])  # Connect the two subplots to remove the extra time axis.
-    epd_idx = np.where(
-        (epd_time >= time_range[0]) &
-        (epd_time <= time_range[1])
-    )[0]
-    assert len(epd_idx), f'No EPD data found in {time_range=}'
-    epd_time_flt = epd_time[epd_idx]
-    epd_counts = epd.varget(f'el{sc_id.lower()}_pef')[epd_idx, :]
+        if 'guide_lines' in locals():
+            for guide_line in guide_lines:
+                guide_line.remove()
+        guide_lines = []
+        for ax_i in ax[1:]:
+            guide_lines.append(ax_i.axvline(image_time, c='k', ls=':'))
+            ax_i.set_xlim(*time_range)
 
-    img_gen = img.animate_fisheye_gen(ax=ax[0], overwrite=True)
-    mask_gen = c.equal_area_gen(box=box)
-
-    for i, ((image_time, image, _, im), mask) in enumerate(zip(img_gen, mask_gen)):
-        ax[1].clear()
-        ax[2].clear()
-        ax[1].xaxis.set_visible([])
-
-        ax[0].plot(asi_pixels[:, 0], asi_pixels[:, 1], 'r:')
-        ax[0].scatter(asi_pixels[i, 0], asi_pixels[i, 1], s=10, c='r')
-
-        # Plot the equal area
-        mask[np.isnan(mask)] = 0  # To play nice with plt.contour()
-        ax[0].contour(mask, levels=[0.99], colors=['yellow'])
-
-        ax[1].plot(c.sat.index, mean_asi_intensity, color='k')
-        for ch in range(epd_counts.shape[1]):
-            ax[2].plot(epd_time_flt, epd_counts[:, ch], color=plt.cm.hsv(ch/16))
-        ax[1].axvline(image_time, c='k')
-        ax[2].axvline(image_time, c='k')
-        ax[1].set_ylabel(f'Mean ASI intensity\n{box} km area')
-        ax[2].set_ylabel(f'ELFIN PEF')
-        ax[2].set_xlabel(f'Time')
-        ax[2].set_xlim(*time_range)
-        ax[2].set_yscale('log')
-        plt.suptitle(
-            f"Conjunction between ELFIN-{sc_id.upper()} & THEMIS-{row['asi'].upper()}\n"
-            f'{img._data["time_range"][0].strftime("%Y-%m-%d")} '
-            f'{img._data["time_range"][0].strftime("%T")} - '
-            f'{img._data["time_range"][1].strftime("%T")}\n'
-            f'{alt} km footprint'
-            )
+        ax[1].set_ylabel(f'Mean ASI intensity\nnearest pixel')
         plt.tight_layout()
 
     plt.close()

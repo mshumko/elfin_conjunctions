@@ -1,7 +1,7 @@
 import numpy as np
 import IRBEM
 
-from elfin_conjunctions.load import elfin
+import pad
 
 
 R_e = 6378.137  # km
@@ -18,8 +18,9 @@ class Elfin_footprint:
         pos_gei: np.array
             The satellite positions in GEI coordinates with shape (nTime, 3)
         """
-        self.time, self.state = elfin.load_state(sc_id, day)
-        self.pos_gei = self.state.varget(f'el{sc_id.lower()}_pos_gei')/R_e
+        _state_object = pad.State(sc_id, day)
+        self.pos_gei = _state_object[f'el{sc_id.lower()}_pos_gei']/R_e
+        self.time = _state_object['epoch']
 
         # all stands for (altitude, latitude, longitude), the variable order for IRBEM.
         transform = IRBEM.Coords()
