@@ -16,23 +16,31 @@ import pad
 alt = 110  # km
 box = (10, 10)  # km
 asis = ['TREx RGB']  # other options: 'THEMIS-ASI', 'TREx RGB', 'TREx NIR', 'REGO'
-
+save_progress=True
 conjunction_dir = pathlib.Path(config['project_dir'], 'data')
-conjunction_path = conjunction_dir / '2019_2023_elfin_themis_rego_trex_conjunctions.csv'
+progress_path = conjunction_dir / 'elfin_conjunctions_progress.txt'
+conjunction_input_path = conjunction_dir / '2019_2023_elfin_themis_rego_trex_conjunctions.csv'
+conjunction_output_path = conjunction_dir / f'2019_2023_elfin_{asis[0].lower().replace(" ", "_")}_conjunctions_data.csv'
 
 # Load the conjunction list and identify the ASI array and ASI location_code.
-conjunction_list = pd.read_csv(conjunction_path)
+conjunction_list = pd.read_csv(conjunction_input_path)
 conjunction_list['Start Time (UTC)'] = pd.to_datetime(conjunction_list['Start Time (UTC)'])
 conjunction_list['End Time (UTC)'] = pd.to_datetime(conjunction_list['End Time (UTC)'])
 conjunction_list['asi_array_and_id'] = [row.split('and')[0] for row in conjunction_list['Conjunction Between'].to_numpy()]
 conjunction_list['asi_array'] = [' '.join(row.split()[:-1]) for row in conjunction_list['asi_array_and_id'].to_numpy()]
 conjunction_list['asi'] = [row.split()[-1] for row in conjunction_list['asi_array_and_id'].to_numpy()]
+
+if save_progress and progress_path.exists():
+    last_processed = pd.Timestamp(progress_path.read_text())
+    conjunction_list = conjunction_list.loc[conjunction_list["Start Time (UTC)"] > last_processed, :]
+
 idx = []
 for i, row in enumerate(conjunction_list['asi_array'].to_numpy()):
     for _asi in asis:
         if _asi in row:
             idx.append(i)
 conjunction_list = conjunction_list.iloc[idx, :]
+good_conjunctions = pd.DataFrame(columns=conjunction_list.columns)
 
 n = conjunction_list.shape[0]
 for row_i, (_, row) in enumerate(conjunction_list.iterrows()):
@@ -45,9 +53,13 @@ for row_i, (_, row) in enumerate(conjunction_list.iterrows()):
     try:
         pad_obj = pad.EPD_PAD(sc_id, time_range, start_pa=90, lc_exclusion_angle=0)
     except (FileNotFoundError, ValueError) as err:
-        if f'No ELFIN-{sc_id} L2 data between' in str(err): 
-            continue
-        elif f'No level 2 ELFIN-{sc_id} electron EPD files found' in str(err):
+        if (
+            ('right keys must be sorted' in str(err)) or 
+            (f'No level 2 ELFIN-{sc_id} electron EPD files found' in str(err)) or
+            (f'No ELFIN-{sc_id} L2 data between' in str(err))
+            ):
+            if save_progress:
+                progress_path.write_text(str(row["Start Time (UTC)"]))
             continue
         else:
             raise
@@ -101,3 +113,11 @@ for row_i, (_, row) in enumerate(conjunction_list.iterrows()):
         plt.tight_layout()
 
     plt.close()
+
+    good_conjunctions = pd.concat([good_conjunctions, row.to_frame().T], ignore_index=True)
+    good_conjunctions.to_csv(conjunction_output_path, index=False)
+    if save_progress:
+        progress_path.write_text(str(row["Start Time (UTC)"]))
+    
+if progress_path.exists():
+    progress_path.unlink()  # Clean up after the loop is complete.
