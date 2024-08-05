@@ -40,7 +40,10 @@ for i, row in enumerate(conjunction_list['asi_array'].to_numpy()):
         if _asi in row:
             idx.append(i)
 conjunction_list = conjunction_list.iloc[idx, :]
-good_conjunctions = pd.DataFrame(columns=conjunction_list.columns)
+if conjunction_output_path.exists():
+    good_conjunctions = pd.read_csv(conjunction_output_path)
+else:
+    good_conjunctions = pd.DataFrame(columns=conjunction_list.columns)
 
 n = conjunction_list.shape[0]
 for row_i, (_, row) in enumerate(conjunction_list.iterrows()):
@@ -51,9 +54,10 @@ for row_i, (_, row) in enumerate(conjunction_list.iterrows()):
         )
     sc_id = row['Conjunction Between'].split('and')[-1][-1]
     try:
-        pad_obj = pad.EPD_PAD(sc_id, time_range, start_pa=90, lc_exclusion_angle=0)
+        pad_obj = pad.EPD_PAD(sc_id, time_range, start_pa=0, lc_exclusion_angle=0)
     except (FileNotFoundError, ValueError) as err:
         if (
+            ('left keys must be sorted' in str(err)) or
             ('right keys must be sorted' in str(err)) or 
             (f'No level 2 ELFIN-{sc_id} electron EPD files found' in str(err)) or
             (f'No ELFIN-{sc_id} L2 data between' in str(err))
