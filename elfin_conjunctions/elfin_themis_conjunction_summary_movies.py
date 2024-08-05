@@ -54,7 +54,9 @@ for row_i, (_, row) in enumerate(conjunction_list.iterrows()):
         )
     sc_id = row['Conjunction Between'].split('and')[-1][-1]
     try:
-        pad_obj = pad.EPD_PAD(sc_id, time_range, start_pa=0, lc_exclusion_angle=0)
+        pad_obj = pad.EPD_PAD(
+            sc_id, time_range, start_pa=0, lc_exclusion_angle=0, min_counts=0, accumulate=1
+            )
     except (FileNotFoundError, ValueError) as err:
         if (
             ('left keys must be sorted' in str(err)) or

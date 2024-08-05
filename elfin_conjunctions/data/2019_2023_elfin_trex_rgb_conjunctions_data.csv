@@ -1,0 +1,4 @@
+Start Time (UTC),End Time (UTC),Duration (min),Min (km),Max (km),Conjunction Type,Conjunction Between,asi_array_and_id,asi_array,asi
+2020-01-08 05:43:00,2020-01-08 05:44:00,2,201,239,nbtrace,TREx RGB LUCK and ELFIN-A,TREx RGB LUCK ,TREx RGB,LUCK
+2020-01-08 05:45:00,2020-01-08 05:47:00,3,90,465,nbtrace,TREx RGB FSMI and ELFIN-A,TREx RGB FSMI ,TREx RGB,FSMI
+2020-01-08 05:45:00,2020-01-08 05:46:00,2,388,465,nbtrace,TREx RGB RABB and ELFIN-A,TREx RGB RABB ,TREx RGB,RABB
