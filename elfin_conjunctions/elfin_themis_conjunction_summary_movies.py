@@ -62,7 +62,8 @@ for row_i, (_, row) in enumerate(conjunction_list.iterrows()):
             ('left keys must be sorted' in str(err)) or
             ('right keys must be sorted' in str(err)) or 
             (f'No level 2 ELFIN-{sc_id} electron EPD files found' in str(err)) or
-            (f'No ELFIN-{sc_id} L2 data between' in str(err))
+            (f'No ELFIN-{sc_id} L2 data between' in str(err)) or
+            (f'does not contain any hyper references containing the match' in str(err))
             ):
             if save_progress:
                 progress_path.write_text(str(row["Start Time (UTC)"]))
@@ -78,7 +79,7 @@ for row_i, (_, row) in enumerate(conjunction_list.iterrows()):
     pad_obj.plot_omni(ax[2], colorbar=False)
     pad_obj.plot_blc_dlc_ratio(ax[3], colorbar=False)
     pad_obj.plot_position(ax[3])
-    # plt.subplots_adjust(bottom=0.127, right=0.927, top=0.948, hspace=0.133)
+    plt.subplots_adjust(bottom=0.127, right=0.927, top=0.948, hspace=0.133)
     # plt.show()
 
     if row['asi_array'] == 'TREx RGB':
@@ -96,9 +97,8 @@ for row_i, (_, row) in enumerate(conjunction_list.iterrows()):
     sat_azel, sat_azel_pixels = conjunction_obj.map_azel()
     nearest_pixel_intensity = conjunction_obj.intensity(box=None)
     
-    # fig, ax = plt.subplots(3, gridspec_kw={'height_ratios':[3, 1, 1]}, figsize=(6, 10))
     gen = asi.animate_fisheye_gen(
-        ax=ax[0], azel_contours=True, overwrite=True, cardinal_directions='news'
+        ax=ax[0], azel_contours=True, overwrite=True, cardinal_directions='news', color_bounds=[10, 105]
     )
     ax[1].plot(conjunction_obj.sat.index, nearest_pixel_intensity, color='k')
 
@@ -116,7 +116,7 @@ for row_i, (_, row) in enumerate(conjunction_list.iterrows()):
             ax_i.set_xlim(*time_range)
 
         ax[1].set_ylabel(f'Mean ASI intensity\nnearest pixel')
-        plt.tight_layout()
+        # plt.tight_layout()
 
     plt.close()
 
